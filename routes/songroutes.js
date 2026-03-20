@@ -5,7 +5,9 @@ const router = express.Router();
 
 const {
   getAllSongs,
-  getSongById
+  getSongById,
+  updateSong,
+    deleteSong
 } = require('../controllers/songcontrollers.js');
 
 // GET /api/songs
@@ -13,5 +15,11 @@ router.get('/', getAllSongs);
 
 // GET /api/songs/:id
 router.get('/:id', getSongById);
+
+// PATCH /api/songs/:id
+router.patch('/:id', updateSong);
+
+// DELETE /api/songs/:id
+router.delete('/:id', deleteSong);
 
 module.exports = router;
