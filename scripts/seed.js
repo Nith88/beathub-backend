@@ -1,71 +1,103 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Artist = require('../models/Artists.js');
+
+const Artist = require('../models/Artists');
 const Album = require('../models/Album');
 const Song = require('../models/Song');
 const User = require('../models/User');
 const Playlist = require('../models/Playlist');
 
+const genres = ['Pop', 'Rock', 'Electronic', 'Hip Hop', 'Jazz'];
+
+function randomItem(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 async function seed() {
   try {
-    console.log('Connecting to MongoDB...');
     await mongoose.connect(process.env.MONGO_URI);
-    console.log('Connected!');
+    console.log('Connected to MongoDB');
 
-    // 1. Clear existing data to avoid duplicates
-    await Artist.deleteMany({});
-    await Album.deleteMany({});
-    await Song.deleteMany({});
-    await User.deleteMany({});
-    await Playlist.deleteMany({});
+    await Promise.all([
+      Artist.deleteMany({}),
+      Album.deleteMany({}),
+      Song.deleteMany({}),
+      User.deleteMany({}),
+      Playlist.deleteMany({})
+    ]);
 
-    // 2. Create an Artist
-    const artist = await Artist.create({
-      name: 'Daft Punk',
-      genre: 'Electronic',
-      bio: 'French electronic music duo.'
-    });
-    console.log(`Created Artist: ${artist.name}`);
+    console.log('Old data cleared');
 
-    // 3. Create an Album (Linked to Artist)
-    const album = await Album.create({
-      title: 'Discovery',
-      releaseYear: 2001,
-      artist: artist._id, // REFERENCING ID
-      coverImage: 'https://example.com/cover.jpg'
-    });
-    console.log(`Created Album: ${album.title}`);
+    // 1️⃣ Artists
+    const artistData = [];
+    for (let i = 0; i < 30; i++) {
+      artistData.push({
+        name: `Artist_${i}`,
+        genre: randomItem(genres),
+        bio: `Bio for artist ${i}`
+      });
+    }
+    const artists = await Artist.insertMany(artistData);
 
-    // 4. Create a Song (Linked to Album and Artist)
-    const song = await Song.create({
-      title: 'One More Time',
-      duration: 320,
-      album: album._id,  // REFERENCING ID
-      artist: artist._id // REFERENCING ID
-    });
-    console.log(`Created Song: ${song.title}`);
+    // 2️⃣ Albums
+    const albumData = [];
+    for (let i = 0; i < 100; i++) {
+      albumData.push({
+        title: `Album_${i}`,
+        releaseYear: 2000 + (i % 24),
+        artist: randomItem(artists)._id
+      });
+    }
+    const albums = await Album.insertMany(albumData);
 
-    // 5. Create a User
-    const user = await User.create({
-      username: 'music_fan_01',
-      email: 'fan@example.com',
-      password: 'hashed_password_123' 
-    });
-    console.log(`Created User: ${user.username}`);
+    // 3️⃣ Songs
+    const songData = [];
+    for (let i = 0; i < 2000; i++) {
+      songData.push({
+        title: `Song_${i}`,
+        duration: Math.floor(Math.random() * 400),
+        genre: randomItem(genres),
+        releaseYear: 2000 + (i % 24),
+        artist: randomItem(artists)._id,
+        album: randomItem(albums)._id
+      });
+    }
+    const songs = await Song.insertMany(songData);
 
-    // 6. Create a Playlist (Linked to User and containing Songs)
-    const playlist = await Playlist.create({
-      name: 'Gym Jams',
-      user: user._id,    // REFERENCING ID
-      songs: [song._id], // ARRAY OF IDs
-      description: 'High energy tracks'
-    });
-    console.log(`Created Playlist: ${playlist.name}`);
+    // 4️⃣ Users
+    const userData = [];
+    for (let i = 0; i < 200; i++) {
+      userData.push({
+        username: `user_${i}`,
+        email: `user${i}@example.com`,
+        password: 'hashed_password'
+      });
+    }
+    const users = await User.insertMany(userData);
 
-    console.log('✅ Seeding Complete!');
+    // 5️⃣ Playlists
+    const playlistData = [];
+    for (let i = 0; i < 400; i++) {
+      const randomSongs = [];
+      for (let j = 0; j < 15; j++) {
+        randomSongs.push(randomItem(songs)._id);
+      }
+
+      playlistData.push({
+        name: `Playlist_${i}`,
+        description: 'Auto generated playlist',
+        user: randomItem(users)._id,
+        songs: randomSongs
+      });
+    }
+
+    await Playlist.insertMany(playlistData);
+
+    console.log('Database seeded successfully!');
     process.exit(0);
-  } catch (error) {
-    console.error('❌ Seeding Failed:', error);
+
+  } catch (err) {
+    console.error(err);
     process.exit(1);
   }
 }

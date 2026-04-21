@@ -10,7 +10,7 @@ const artistSchema = new mongoose.Schema({
     type: String,
     required: true,
     // Restricts the value to only these specific strings
-    enum: ['Pop', 'Rock', 'HipHop', 'Jazz', 'Electronic'] 
+    enum: ['Pop', 'Rock', 'Hip Hop', 'Jazz', 'Electronic'] 
   },
   followers: {
     type: Number,
