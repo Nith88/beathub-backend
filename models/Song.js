@@ -23,6 +23,22 @@ const songSchema = new mongoose.Schema(
     type: mongoose.Schema.Types.ObjectId,
     ref: "Album",
     required: true
+  },
+
+  genre: {
+    type: String,
+    required: true,
+    enum: ['Pop', 'Rock', 'Hip Hop', 'Jazz', 'Electronic']
+  },
+
+  releaseYear: {
+    type: Number,
+    required: true
+  },
+
+  plays: {
+    type: Number,
+    default: 0
   }
 },
 {

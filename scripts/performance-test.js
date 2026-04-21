@@ -2,6 +2,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const Song = require('../models/Song');
 const Playlist = require('../models/Playlist');
+const User = require('../models/User');
 
 async function runTests() {
   await mongoose.connect(process.env.MONGO_URI);

@@ -1,5 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const Artist = require('../models/Artists');
 const Album = require('../models/Album');
@@ -66,11 +67,14 @@ async function seed() {
 
     // 4️⃣ Users
     const userData = [];
+    const salt = await bcrypt.genSalt(10);
     for (let i = 0; i < 200; i++) {
+      const hashedPassword = await bcrypt.hash('password123', salt);
       userData.push({
         username: `user_${i}`,
         email: `user${i}@example.com`,
-        password: 'hashed_password'
+        password: hashedPassword,
+        loginCount: Math.floor(Math.random() * 100)
       });
     }
     const users = await User.insertMany(userData);

@@ -35,7 +35,30 @@ const getSongById = async (req, res) => {
     return res.status(500).json({ message: 'Server Error' });
   }
 };
-// PATCH - Update song
+
+// POST - Create a new song
+const createSong = async (req, res) => {
+  try {
+    const { title, duration, artist, album, genre, releaseYear } = req.body;
+
+    const newSong = new Song({
+      title,
+      duration,
+      artist,
+      album,
+      genre,
+      releaseYear
+    });
+
+    const savedSong = await newSong.save();
+    return res.status(201).json({ success: true, data: savedSong });
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: error.message });
+    }
+    return res.status(500).json({ message: 'Server Error' });
+  }
+};
 const updateSong = async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
@@ -99,6 +122,7 @@ const deleteSong = async (req, res) => {
 module.exports = {
   getAllSongs,
   getSongById,
+  createSong,
   updateSong,
   deleteSong
 };
