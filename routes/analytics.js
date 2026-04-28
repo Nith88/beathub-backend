@@ -5,6 +5,9 @@ const router = express.Router();
 const Song = require('../models/Song');
 const Playlist = require('../models/Playlist');
 
+const authenticate = require('../middleware/authenticate');
+const authorize = require('../middleware/authorize');
+
 // Import Pipelines
 const topArtistsPipeline = require('../aggregations/top-artists');
 const userActivityPipeline = require('../aggregations/user-activity');
@@ -22,7 +25,7 @@ const userActivityPipeline = require('../aggregations/user-activity');
  *       500:
  *         description: Server error
  */
-router.get('/top-artists', async (req, res) => {
+router.get('/top-artists', authenticate, async (req, res) => {
   try {
     // Execute the pipeline on the Song model
     const results = await Song.aggregate(topArtistsPipeline);
@@ -46,7 +49,7 @@ router.get('/top-artists', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.get('/most-active-users', async (req, res) => {
+router.get('/most-active-users', authenticate, authorize('admin'), async (req, res) => {
   try {
     // Execute the pipeline on the Playlist model
     const results = await Playlist.aggregate(userActivityPipeline);

@@ -52,10 +52,21 @@ exports.loginUser = async (req, res) => {
     // 3. Generate JWT
     const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
 
-    // Update login count
+    // Step 4: Update login count
     await User.findByIdAndUpdate(user._id, { $inc: { loginCount: 1 } });
 
-    res.status(200).json({ success: true, message: 'Login successful', token, user: { id: user._id, username: user.username, email: user.email } });
+    // Step 5: Send response
+res.status(200).json({
+  success: true,
+  data: {
+    token,
+    user: {
+      id: user._id,
+      username: user.username,
+      role: user.role // <--- Add this line
+    }
+  }
+});
   } catch (error) {
     res.status(500).json({ success: false, message: 'Login failed', error: error.message });
   }
