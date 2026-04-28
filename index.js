@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const songRoutes = require('./routes/songroutes.js');
 const analyticsRouter = require('./routes/analytics');
 const authRoutes = require('./routes/auth');
+const song = require('./routes/songs.js');
 
 const app = express();
 
@@ -26,7 +27,9 @@ app.use('/api/analytics', analyticsRouter);
 // Auth routes
 app.use('/api/auth', authRoutes);
 
+app.use('/api', song);
+
 // Start server
-app.listen(3000, () => {
-  console.log('Server running on port 3000');
+app.listen(process.env.PORT || 3000, () => {
+  console.log('Server running on port ' + (process.env.PORT || 3000));
 });
