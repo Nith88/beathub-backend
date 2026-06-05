@@ -1,0 +1,1125 @@
+{
+  "info": {
+    "_postman_id": "beathub-backend-collection",
+    "name": "BeatHub Backend API Tests",
+    "description": "Comprehensive test collection for BeatHub backend API including authentication, song CRUD operations, analytics, and pagination",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.code.should.be.oneOf([201, 200]);",
+                  "});",
+                  "",
+                  "pm.test('Response is successful', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.message).to.include('successfully');",
+                  "});",
+                  "",
+                  "pm.test('Registration response has expected structure', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser_{{$timestamp}}\",\n  \"email\": \"testuser_{{$timestamp}}@example.com\",\n  \"password\": \"TestPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a new user with username, email, and password"
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.code.should.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is successful', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test('Login returns token and user data', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('token');",
+                  "    pm.expect(jsonData.data).to.have.property('user');",
+                  "});",
+                  "",
+                  "pm.test('User object has required fields', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    var user = jsonData.data.user;",
+                  "    pm.expect(user).to.have.property('username');",
+                  "    pm.expect(user).to.have.property('email');",
+                  "    pm.expect(user).to.have.property('role');",
+                  "});",
+                  "",
+                  "// Save the token for future requests",
+                  "pm.environment.set('auth_token', pm.response.json().data.token);",
+                  "pm.environment.set('user_id', pm.response.json().data.user._id);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Store the login credentials for this test",
+                  "// These should match the user created in the Register User request"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"TestPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login user with email and password to get JWT token"
+          },
+          "response": []
+        },
+        {
+          "name": "Login Invalid Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401', function() {",
+                  "    pm.response.code.should.eql(401);",
+                  "});",
+                  "",
+                  "pm.test('Returns error message for invalid credentials', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(false);",
+                  "    pm.expect(jsonData.message).to.include('Invalid');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nonexistent@example.com\",\n  \"password\": \"WrongPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Test login with invalid credentials - should return 401"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Artists",
+      "item": [
+        {
+          "name": "Create Artist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 or 200', function() {",
+                  "    pm.response.code.should.be.oneOf([201, 200]);",
+                  "});",
+                  "",
+                  "pm.test('Artist has required fields', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('_id');",
+                  "    pm.expect(jsonData).to.have.property('name');",
+                  "    pm.expect(jsonData).to.have.property('genre');",
+                  "});",
+                  "",
+                  "// Save artist ID for creating songs",
+                  "pm.environment.set('artist_id', pm.response.json()._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"The Weeknd\",\n  \"genre\": \"Pop\",\n  \"followers\": 500,\n  \"socialLinks\": {\n    \"twitter\": \"https://twitter.com/theweeknd\",\n    \"instagram\": \"https://instagram.com/theweeknd\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/artists",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "artists"
+              ]
+            },
+            "description": "Create a new artist - note: this endpoint may not exist, adjust based on actual API"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Albums",
+      "item": [
+        {
+          "name": "Create Album",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 or 200', function() {",
+                  "    pm.response.code.should.be.oneOf([201, 200]);",
+                  "});",
+                  "",
+                  "pm.test('Album has required fields', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('_id');",
+                  "    pm.expect(jsonData).to.have.property('title');",
+                  "    pm.expect(jsonData).to.have.property('releaseYear');",
+                  "});",
+                  "",
+                  "// Save album ID for creating songs",
+                  "pm.environment.set('album_id', pm.response.json()._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"After Hours\",\n  \"releaseYear\": 2020,\n  \"artist\": \"{{artist_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/albums",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "albums"
+              ]
+            },
+            "description": "Create a new album - note: this endpoint may not exist, adjust based on actual API"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Songs",
+      "item": [
+        {
+          "name": "Create Song",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.code.should.eql(201);",
+                  "});",
+                  "",
+                  "pm.test('Response is successful', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test('Song has all required fields', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    var song = jsonData.data;",
+                  "    pm.expect(song).to.have.property('_id');",
+                  "    pm.expect(song).to.have.property('title');",
+                  "    pm.expect(song).to.have.property('duration');",
+                  "    pm.expect(song).to.have.property('artist');",
+                  "    pm.expect(song).to.have.property('album');",
+                  "    pm.expect(song).to.have.property('genre');",
+                  "    pm.expect(song).to.have.property('releaseYear');",
+                  "    pm.expect(song).to.have.property('plays');",
+                  "});",
+                  "",
+                  "pm.test('Song has correct genre and release year', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    var song = jsonData.data;",
+                  "    pm.expect(song.genre).to.eql('Pop');",
+                  "    pm.expect(song.releaseYear).to.eql(2020);",
+                  "    pm.expect(song.plays).to.eql(0);",
+                  "});",
+                  "",
+                  "// Save song ID for future operations",
+                  "pm.environment.set('song_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Blinding Lights\",\n  \"duration\": 200,\n  \"artist\": \"{{artist_id}}\",\n  \"album\": \"{{album_id}}\",\n  \"genre\": \"Pop\",\n  \"releaseYear\": 2020\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/songs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs"
+              ]
+            },
+            "description": "Create a new song with all required fields. Artist and Album must be valid ObjectIds"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Songs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.code.should.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(Array.isArray(jsonData)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Each song has required fields', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.length > 0) {",
+                  "        jsonData.forEach(function(song) {",
+                  "            pm.expect(song).to.have.property('_id');",
+                  "            pm.expect(song).to.have.property('title');",
+                  "            pm.expect(song).to.have.property('duration');",
+                  "            pm.expect(song).to.have.property('genre');",
+                  "        });",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/songs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs"
+              ]
+            },
+            "description": "Get all songs from database"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Song By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.code.should.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Song object has required fields', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('_id');",
+                  "    pm.expect(jsonData).to.have.property('title');",
+                  "    pm.expect(jsonData).to.have.property('duration');",
+                  "    pm.expect(jsonData).to.have.property('artist');",
+                  "    pm.expect(jsonData).to.have.property('album');",
+                  "    pm.expect(jsonData).to.have.property('genre');",
+                  "});",
+                  "",
+                  "pm.test('Returned song matches requested ID', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData._id).to.eql(pm.environment.get('song_id'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{song_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{song_id}}"
+              ]
+            },
+            "description": "Get a specific song by its ID. Uses song_id environment variable"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Song By Invalid ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 or 404', function() {",
+                  "    pm.response.code.should.be.oneOf([400, 404]);",
+                  "});",
+                  "",
+                  "pm.test('Returns error message', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/songs/invalid-id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "invalid-id"
+              ]
+            },
+            "description": "Test getting song with invalid ID format - should return 400 or 404"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Song",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.code.should.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is successful', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test('Updated song has new values', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    var song = jsonData.data;",
+                  "    pm.expect(song.title).to.eql('Blinding Lights (Remix)');",
+                  "    pm.expect(song.duration).to.eql(210);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Blinding Lights (Remix)\",\n  \"duration\": 210\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{song_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{song_id}}"
+              ]
+            },
+            "description": "Update a song by ID with partial or full updates"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Song",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 204', function() {",
+                  "    pm.response.code.should.eql(204);",
+                  "});",
+                  "",
+                  "pm.test('Response body is empty', function() {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{song_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{song_id}}"
+              ]
+            },
+            "description": "Delete a song by ID - returns 204 No Content on success"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Song Deleted",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function() {",
+                  "    pm.response.code.should.eql(404);",
+                  "});",
+                  "",
+                  "pm.test('Returns not found message', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{song_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{song_id}}"
+              ]
+            },
+            "description": "Verify that deleted song is no longer retrievable"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Songs - Pagination",
+      "item": [
+        {
+          "name": "Get Songs with Pagination",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.code.should.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has metadata', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('metadata');",
+                  "    pm.expect(jsonData.metadata).to.have.property('currentPage');",
+                  "    pm.expect(jsonData.metadata).to.have.property('totalPages');",
+                  "    pm.expect(jsonData.metadata).to.have.property('totalDocuments');",
+                  "    pm.expect(jsonData.metadata).to.have.property('hasNext');",
+                  "    pm.expect(jsonData.metadata).to.have.property('hasPrev');",
+                  "});",
+                  "",
+                  "pm.test('Response has data array', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(Array.isArray(jsonData.data)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Page 1 should have hasPrev false', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.metadata.currentPage).to.eql(1);",
+                  "    pm.expect(jsonData.metadata.hasPrev).to.be.false;",
+                  "});",
+                  "",
+                  "pm.test('Respects page and limit parameters', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.metadata.currentPage).to.eql(1);",
+                  "    pm.expect(jsonData.data.length).to.be.at.most(10);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/song?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "song"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get songs with offset-based pagination. Returns metadata with total pages, current page, and navigation info"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Songs Page 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.code.should.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Page 2 should have hasPrev true', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.metadata.totalPages >= 2) {",
+                  "        pm.expect(jsonData.metadata.currentPage).to.eql(2);",
+                  "        pm.expect(jsonData.metadata.hasPrev).to.be.true;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/song?page=2&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "song"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get second page of songs with pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Songs with Custom Limit",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status code is 200', function() {",
+                    "    pm.response.code.should.eql(200);",
+                    "});",
+                    "",
+                    "pm.test('Respects custom limit', function() {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData.data.length).to.be.at.most(5);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/song?page=1&limit=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "song"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Test pagination with custom limit value"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Songs with Cursor Pagination",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.code.should.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has cursor pagination structure', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success').that.equals(true);",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData).to.have.property('pagination');",
+                  "});",
+                  "",
+                  "pm.test('Pagination object has required fields', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    var pagination = jsonData.pagination;",
+                  "    pm.expect(pagination).to.have.property('nextCursor');",
+                  "    pm.expect(pagination).to.have.property('hasMore');",
+                  "    pm.expect(pagination).to.have.property('limit');",
+                  "    pm.expect(pagination).to.have.property('count');",
+                  "});",
+                  "",
+                  "pm.test('Data is an array', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(Array.isArray(jsonData.data)).to.be.true;",
+                  "});",
+                  "",
+                  "// Save the next cursor for the next request",
+                  "if (pm.response.json().pagination.nextCursor) {",
+                  "    pm.environment.set('next_cursor', pm.response.json().pagination.nextCursor);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/song/cursor?limit=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "song",
+                "cursor"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Get songs using cursor-based pagination for better performance with large datasets"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Next Page with Cursor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.code.should.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is valid cursor pagination', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData).to.have.property('pagination');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/song/cursor?cursor={{next_cursor}}&limit=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "song",
+                "cursor"
+              ],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "{{next_cursor}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Get next page using cursor from previous response"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Top Artists",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// This endpoint requires authentication",
+                  "// Make sure auth_token is set from Login request"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.code.should.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is successful', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test('Response has data array', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(Array.isArray(jsonData.data)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Artists are sorted by song count', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data.length > 1) {",
+                  "        for (var i = 0; i < jsonData.data.length - 1; i++) {",
+                  "            pm.expect(jsonData.data[i].songCount).to.be.at.least(jsonData.data[i+1].songCount);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/top-artists",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "top-artists"
+              ]
+            },
+            "description": "Get top 5 artists ranked by number of songs. Requires authentication token"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Top Artists Without Auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401', function() {",
+                  "    pm.response.code.should.eql(401);",
+                  "});",
+                  "",
+                  "pm.test('Returns authentication error', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(false);",
+                  "    pm.expect(jsonData.message).to.include('not logged in');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/top-artists",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "top-artists"
+              ]
+            },
+            "description": "Try to access analytics without authentication - should return 401"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Most Active Users",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// This endpoint requires authentication AND admin authorization",
+                  "// Make sure auth_token is set and user has admin role"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 403', function() {",
+                  "    // Will be 200 if user is admin, 403 if not authorized",
+                  "    pm.response.code.should.be.oneOf([200, 403]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Response is successful', function() {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.eql(true);",
+                  "    });",
+                  "    ",
+                  "    pm.test('Response has data array', function() {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(Array.isArray(jsonData.data)).to.be.true;",
+                  "    });",
+                  "} else if (pm.response.code === 403) {",
+                  "    pm.test('Returns authorization error when not admin', function() {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.eql(false);",
+                  "        pm.expect(jsonData.message).to.include('admin');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/most-active-users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "most-active-users"
+              ]
+            },
+            "description": "Get top 5 most active users ranked by playlists created. Requires admin authorization"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "song_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "artist_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "album_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "next_cursor",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

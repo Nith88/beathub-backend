@@ -1,6 +1,7 @@
 const User = require('../models/User'); // Assuming your model is in models/User.js
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { userToDTO } = require('../utils/dtos'); 
 
 exports.registerUser = async (req, res) => {
   try {
@@ -60,11 +61,7 @@ res.status(200).json({
   success: true,
   data: {
     token,
-    user: {
-      id: user._id,
-      username: user.username,
-      role: user.role // <--- Add this line
-    }
+    user: userToDTO(user)
   }
 });
   } catch (error) {

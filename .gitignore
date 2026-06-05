@@ -2,3 +2,7 @@
 /dist
 /.env
 /.env.local 
+/.env.example
+/logs
+/.dockerignore
+
